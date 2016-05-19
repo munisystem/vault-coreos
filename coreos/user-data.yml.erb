@@ -57,7 +57,7 @@ coreos:
 
         [Install]
         WantedBy=sockets.target
-    - name: vault.socket
+    - name: vault.service
       command: start
       enable: true
       content: |
@@ -73,7 +73,7 @@ coreos:
         ExecStartPre=-/usr/bin/docker kill vault
         ExecStartPre=-/usr/bin/docker rm vault
         ExecStartPre=/usr/bin/docker pull cgswong/vault
-        ExecStart=/usr/bin/docker run --name vault -p 8200:8200 -v /home/core/vault.conf:/root/vault.conf cfswong/vault:latest server -config /root/vault.conf
+        ExecStart=/usr/bin/docker run --name vault -p 8200:8200 -v /home/core/vault.conf:/root/vault.conf cgswong/vault:latest server -config /root/vault.conf
         ExecStop=/usr/bin/docker stop vault
 
         [Install]
@@ -134,9 +134,11 @@ write_files:
         bucket = "<%= ENV["AWS_S3_BUCKET"] %>"
         access_key = "<%= ENV["AWS_ACCESS_KEY_ID"] %>"
         secret_key = "<%= ENV["AWS_SECRET_ACCESS_KEY"] %>"
+        region = "<%= ENV["AWS_S3_REGION"] %>"
       }
 
       listener "tcp" {
         address = "0.0.0.0:8200"
         tls_disable = 1
       }
+      disable_mlock=true
