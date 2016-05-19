@@ -57,6 +57,28 @@ coreos:
 
         [Install]
         WantedBy=sockets.target
+    - name: vault.socket
+      command: start
+      enable: true
+      content: |
+        [Unit]
+        Description=Vault Service
+        After=docker.service
+        Requires=docker.service
+
+        [Service]
+        TimeoutStartSec=0
+        Restart=always
+        User=core
+        ExecStartPre=-/usr/bin/docker kill vault
+        ExecStartPre=-/usr/bin/docker rm vault
+        ExecStartPre=/usr/bin/docker pull cgswong/vault
+        ExecStart=/usr/bin/docker run --name vault -p 8200:8200 -v /home/core/vault.conf:/root/vault.conf cfswong/vault:latest server -config /root/vault.conf
+        ExecStop=/usr/bin/docker stop vault
+
+        [Install]
+        WantedBy=multi-user.target
+
     # # Launch application as Docker container.
     # # Please replace `awesome` to your app (or Docker image) name.
     # - name: awesome.service
@@ -104,3 +126,17 @@ write_files:
       restrict default nomodify nopeer noquery limited kod
       restrict 127.0.0.1
       restrict [::1]
+  - path: /home/core/vault.conf
+    permission: 0644
+    owner: core:core
+    content: |
+      backend "s3" {
+        bucket = "<%= ENV["AWS_S3_BUCKET"] %>"
+        access_key = "<%= ENV["AWS_ACCESS_KEY_ID"] %>"
+        secret_key = "<%= ENV["AWS_SECRET_ACCESS_KEY"] %>"
+      }
+
+      listener "tcp" {
+        address = "0.0.0.0:8200"
+        tls_disable = 1
+      }
